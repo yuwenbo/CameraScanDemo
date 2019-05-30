@@ -40,7 +40,7 @@ Camera1
     mCamera.setPreviewTexture(mSurfaceTexture);
     //开启预览
     mCamera.startPreview();
-    
+```    
 ```java
     //点击拍照时调用，获取一次当前预览，实现拍照 
     mCamera.setOneShotPreviewCallback(mPreviewCallback);
@@ -59,7 +59,7 @@ Camera1
     ...
 ```
 * #### 预览SurfaceTexture
->>创建预览
+>创建预览
 ``` java
     /**
      * 相机预览视图创建
@@ -76,15 +76,15 @@ Camera1
     mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
 
 ```
->>预览尺寸
+>预览尺寸
 ```java
 mParameters.getSupportedPreviewSizes();
 ```
->>图片尺寸
+>图片尺寸
 ```java
 mParameters.getSupportedPictureSizes();
 ```
->>设置尺寸参数
+>设置尺寸参数
 ```java
     mParameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);// 获得摄像预览的大小
     mParameters.setPictureSize(mPictureSize.width, mPictureSize.height);// 设置拍出来的屏幕大小
@@ -119,7 +119,7 @@ mParameters.getSupportedPictureSizes();
     }
 ```
 * #### 传感器Sensor
->>使用传感器实现连续自动对焦，检测手机是否发生移动
+>使用传感器实现连续自动对焦，检测手机是否发生移动
 ```java
     mSensorManager = (SensorManager) activity.getSystemService(Activity.SENSOR_SERVICE);
     mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -131,13 +131,13 @@ mParameters.getSupportedPictureSizes();
 Camera2
 -----------
 * #### CameraDevice
->>获取相机对象，可以获取到相机ID列表
+>获取相机对象，可以获取到相机ID列表
 ```java 
     mCameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
     //设备支持的相机
     mCameraManager.getCameraIdList();
 ```
->>尝试打开相机时的监听，成功开启会返回 <b>CameraDevice</b> 对象
+>尝试打开相机时的监听，成功开启会返回 <b>CameraDevice</b> 对象
 ```java
     /**
      * 相机打开状态的回调
@@ -164,7 +164,7 @@ Camera2
 ```
 
 * #### CameraCharacteristics 
->>获取存储相机配置的 ``CameraCharacteristics`` 对象
+>获取存储相机配置的 ``CameraCharacteristics`` 对象
 ```java 
     mCharacteristics = mCameraManager.getCameraCharacteristics(cameraId);
 
@@ -175,7 +175,7 @@ Camera2
          return cameraId;
     }
 ```
->>相机可用的配置流
+>相机可用的配置流
 ```java    
     StreamConfigurationMap map = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
     if (map != null) {
@@ -195,7 +195,7 @@ Camera2
 ```
 根据需要可以在 mPreviewSizes 中选择一个最合适的尺寸 mPreviewSize
 * #### 预览SurfaceTexture
->>为TextureView设置容器监听，有效时会返回 <b>SurfaceTexture</b> 对象
+>为TextureView设置容器监听，有效时会返回 <b>SurfaceTexture</b> 对象
 ``` java
     /**
      * 相机预览视图创建
@@ -215,7 +215,7 @@ Camera2
 ```
 * #### CameraCaptureSession 
 
->>相机图像捕获配置回调，配置完成会返回 <b>CameraCaptureSession</b> 对象
+>相机图像捕获配置回调，配置完成会返回 <b>CameraCaptureSession</b> 对象
 ```java
     private CameraCaptureSession.StateCallback captureStateCallback = new CameraCaptureSession.StateCallback() {
         @Override
@@ -233,7 +233,7 @@ Camera2
     };
 ```
 
->>预览回调
+>预览回调
 ```java 
     /**
      * 捕获图像的监听
@@ -254,7 +254,7 @@ Camera2
 
 ```
 * #### CaptureRequest 
->>预览
+>预览
 ```java 
     //创建一个适用于配置预览的模板
     mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -271,7 +271,7 @@ Camera2
     mCaptureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
     mCaptureSession.setRepeatingRequest(mCaptureRequestBuilder.build(), null, mCameraHandler);
 ```
->>拍照
+>拍照
 ```java
     //创建一个适用于配置拍照的模板
     mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
@@ -283,7 +283,7 @@ Camera2
     mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
     mCaptureSession.capture(mCaptureRequestBuilder.build(), captureCallback, mCameraHandler);
 ```
->>闪光灯
+>闪光灯
 ```java
     mCaptureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);//开启闪光灯
     mCaptureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);//关闭闪光灯
@@ -311,5 +311,5 @@ Camera2
     };
     
 ```
-在mCaptureSession完成一次拍照时候会回调onImageAvailable，并返回一个 ``ImageReader`` 对象
+在mCaptureSession完成一次拍照时候会回调onImageAvailable，并返回一个 <b>ImageReader</b> 对象
 
