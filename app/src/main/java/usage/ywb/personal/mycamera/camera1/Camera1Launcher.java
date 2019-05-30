@@ -3,6 +3,8 @@ package usage.ywb.personal.mycamera.camera1;
 import android.app.Activity;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
 import android.util.Log;
 import android.view.TextureView;
 
@@ -88,7 +90,6 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
             }
             parameters.setPictureSize(pictureSize.width, pictureSize.height);// 设置拍出来的屏幕大小
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);// 自动对焦模式
-//            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);// 开启闪光灯
             camera.setDisplayOrientation(90);
             camera.setParameters(parameters);
             camera.setPreviewTexture(surfaceTexture);
@@ -106,6 +107,20 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
             openCamera();
         }
         sensorController.onStart();
+    }
+
+    /**
+     * 闪光灯
+     */
+    public void setTorchStatus(boolean needTorch) {
+        if (parameters != null) {
+            if (needTorch) {
+                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);// 开启闪光灯
+            } else {
+                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);// 开启闪光灯
+            }
+            camera.setParameters(parameters);
+        }
     }
 
     @Override

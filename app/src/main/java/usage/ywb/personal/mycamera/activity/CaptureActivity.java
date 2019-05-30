@@ -2,6 +2,7 @@ package usage.ywb.personal.mycamera.activity;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -9,6 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
+import android.widget.Button;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,7 +19,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.UUID;
 
-import usage.ywb.personal.mycamera.utils.CameraHelper;
+import usage.ywb.personal.mycamera.utils.CaptureHelper;
 import usage.ywb.personal.mycamera.R;
 import usage.ywb.personal.mycamera.interfaces.CameraLauncher;
 import usage.ywb.personal.mycamera.view.ViewfinderView;
@@ -26,14 +28,15 @@ import usage.ywb.personal.mycamera.view.ViewfinderView;
  * @author yuwenbo
  * @version [ V.1.0.0  2018/7/11 ]
  */
-public class CaptureActivity extends AppCompatActivity implements CameraHelper.OnCaptureCropListener, ViewfinderView.OnDrawCompletedListener {
+public class CaptureActivity extends AppCompatActivity implements CaptureHelper.OnCaptureCropListener, ViewfinderView.OnDrawCompletedListener {
 
     private static final String TAG = CaptureActivity.class.getSimpleName();
 
-    private CameraHelper cameraHelper;
-    private CameraLauncher cameraLauncher;
-
     private ViewfinderView viewfinderView;
+    private Button torchButton;
+
+    private CaptureHelper cameraHelper;
+    private CameraLauncher cameraLauncher;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -42,7 +45,7 @@ public class CaptureActivity extends AppCompatActivity implements CameraHelper.O
         TextureView textureView = findViewById(R.id.capture_preview);
         viewfinderView = findViewById(R.id.view_finder);
         viewfinderView.setOnDrawCompletedListener(this);
-        cameraHelper = new CameraHelper(this, textureView);
+        cameraHelper = new CaptureHelper(this, textureView);
         cameraHelper.setOnCaptureCropListener(this);
         cameraLauncher = cameraHelper.getCameraLauncher();
         findViewById(R.id.capture_button).setOnClickListener(new View.OnClickListener() {
@@ -51,6 +54,25 @@ public class CaptureActivity extends AppCompatActivity implements CameraHelper.O
                 cameraLauncher.capture();
             }
         });
+
+        torchButton = findViewById(R.id.torch_button);
+        torchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (v.getTag() == null) {
+                    if (cameraHelper.setFlash(true)) {
+                        v.setTag(1);
+                        torchButton.setText("关灯");
+                    }
+                } else {
+                    if (cameraHelper.setFlash(false)) {
+                        v.setTag(null);
+                        torchButton.setText("开灯");
+                    }
+                }
+            }
+        });
+
     }
 
     @Override
@@ -111,9 +133,9 @@ public class CaptureActivity extends AppCompatActivity implements CameraHelper.O
 
 
     @Override
-    public void onCompleted() {
+    public void onCompleted(int width, int height, Rect rect) {
         if (cameraHelper != null) {
-            cameraHelper.setCropRect(viewfinderView.getCropRect(), viewfinderView.getCropWidthRate(), viewfinderView.getCropHeightRate());
+            cameraHelper.setCropRect(rect, viewfinderView.getCropWidthRate(), viewfinderView.getCropHeightRate());
         }
     }
 }

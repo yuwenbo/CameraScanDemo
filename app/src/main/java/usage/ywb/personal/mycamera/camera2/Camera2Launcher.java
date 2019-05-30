@@ -41,7 +41,6 @@ import java.util.Arrays;
 
 import usage.ywb.personal.mycamera.interfaces.CameraLauncher;
 
-
 /**
  * @author yuwenbo
  * @version [ V.1.0.0  2018/7/19 ]
@@ -66,10 +65,17 @@ public class Camera2Launcher extends CameraLauncher {
     private CameraDevice cameraDevice;
     private CameraCaptureSession captureSession;
     private CameraCharacteristics characteristics;
+    private CaptureRequest.Builder captureRequestBuilder;
 
     private static final String CAMERA_THREAD = "CameraBackground";
 
+    /**
+     * 最佳预览尺寸
+     */
     private Size mPreviewSize;
+    /**
+     * 后置摄像头ID
+     */
     private String cameraId;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -104,23 +110,6 @@ public class Camera2Launcher extends CameraLauncher {
             Log.i(TAG, "onCameraUnavailable：" + cameraId + "  Thread：" + Thread.currentThread().getName());
         }
     };
-
-    /**
-     * 闪光灯
-     */
-//    private CameraManager.TorchCallback torchCallback = new CameraManager.TorchCallback() {
-//        @Override
-//        public void onTorchModeUnavailable(@NonNull String cameraId) {
-//            super.onTorchModeUnavailable(cameraId);
-//            Log.i(TAG, "onTorchModeUnavailable：");
-//        }
-//
-//        @Override
-//        public void onTorchModeChanged(@NonNull String cameraId, boolean enabled) {
-//            super.onTorchModeChanged(cameraId, enabled);
-//            Log.i(TAG, "onTorchModeChanged：");
-//        }
-//    };
 
     /**
      * 相机预览视图创建
@@ -235,10 +224,14 @@ public class Camera2Launcher extends CameraLauncher {
             Log.i(TAG, "imageAvailableListener：" + "  onImageAvailable");
             if (onCaptureListener != null) {
                 Image image = reader.acquireNextImage();
+                int width = image.getWidth();
+                int height = image.getHeight();
                 ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                 byte[] bytes = new byte[buffer.remaining()];
                 buffer.get(bytes);
-                onCaptureListener.onCaptureResult(bytes, image.getWidth(), image.getHeight());
+                onCaptureListener.onCaptureResult(bytes, width, height);
+                image.close();
+                reader.close();
             }
         }
     };
@@ -274,12 +267,25 @@ public class Camera2Launcher extends CameraLauncher {
             cameraId = getBackCameraId();
         }
         if (characteristics != null && mPreviewSize == null) {
+            //相机可用的配置流
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             if (map != null) {
+                /**
+                 * {@link StreamConfigurationMap#getOutputSizes(Class)} 要求传递一个 Class 类型，
+                 * 然后根据这个类型返回对应的尺寸列表，如果给定的类型不支持，则返回 null，
+                 * 可以通过 StreamConfigurationMap.isOutputSupportedFor() 方法判断某一个类型是否被支持，常见的类型有：
+                 *
+                 * ImageReader：常用来拍照或接收 YUV 数据。
+                 * MediaRecorder：常用来录制视频。
+                 * MediaCodec：常用来录制视频。
+                 * SurfaceHolder：常用来显示预览画面。
+                 * SurfaceTexture：常用来显示预览画面。
+                 */
                 mPreviewSize = getBestResolution(map.getOutputSizes(SurfaceTexture.class), textureView.getWidth(), textureView.getHeight());
             }
         }
         if (mPreviewSize != null) {
+            //设置预览画面的尺寸
             surfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
             imageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.JPEG, 1);
         } else {
@@ -290,12 +296,26 @@ public class Camera2Launcher extends CameraLauncher {
     }
 
     /**
-     *
+     * 闪光灯开关
      */
-    public void openTorch() {
+    public boolean setTorchStatus(boolean needTorch) {
         if (characteristics != null) {
             Boolean torch = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+            if (torch != null && torch && captureSession != null && captureRequestBuilder != null) {//闪光灯是否可用
+                if (needTorch) {
+                    captureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);//开启闪光灯
+                } else {
+                    captureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);//关闭闪光灯
+                }
+                try {
+                    captureSession.setRepeatingRequest(captureRequestBuilder.build(), null, cameraHandler);
+                    return true;
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+            }
         }
+        return false;
     }
 
     /**
@@ -310,6 +330,7 @@ public class Camera2Launcher extends CameraLauncher {
                 cameraManager.registerAvailabilityCallback(availabilityCallback, cameraHandler);
                 for (String cameraId : cameraIdList) {
                     characteristics = cameraManager.getCameraCharacteristics(cameraId);
+                    //获取摄像头的方向
                     Integer lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
                     if (lensFacing != null && lensFacing == CameraCharacteristics.LENS_FACING_BACK) {
                         // 如果是后置摄像头
@@ -350,18 +371,19 @@ public class Camera2Launcher extends CameraLauncher {
     public void preview() {
         if (cameraDevice != null && captureSession != null) {
             try {
-                CaptureRequest.Builder builder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                builder.addTarget(surface);
+                //创建一个适用于配置预览的模板
+                captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                captureRequestBuilder.addTarget(surface);
                 //CaptureRequest.Builder#set()方法设置预览界面的特征,例如，闪光灯，zoom调焦等
-                builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);//自动对焦
+                captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);//自动对焦
                 // 设置自动曝光模式
-                builder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
                 // 获取设备方向
                 int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
                 // 根据设备方向计算设置照片的方向
-                builder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-                builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-                captureSession.setRepeatingRequest(builder.build(), null, cameraHandler);
+                captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+                captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                captureSession.setRepeatingRequest(captureRequestBuilder.build(), null, cameraHandler);
             } catch (CameraAccessException e) {
                 e.printStackTrace();
             }
@@ -375,14 +397,14 @@ public class Camera2Launcher extends CameraLauncher {
     public void capture() {
         if (cameraDevice != null && captureSession != null) {
             try {
-                CaptureRequest.Builder builder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-                captureSession.stopRepeating();
-                builder.addTarget(surface);
-                builder.addTarget(imageReader.getSurface());
+//                captureSession.stopRepeating();
+                captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                captureRequestBuilder.addTarget(surface);
+                captureRequestBuilder.addTarget(imageReader.getSurface());
                 int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
                 // 根据设备方向计算设置照片的方向
-                builder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-                captureSession.capture(builder.build(), captureCallback, cameraHandler);
+                captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+                captureSession.capture(captureRequestBuilder.build(), captureCallback, cameraHandler);
             } catch (CameraAccessException e) {
                 e.printStackTrace();
             }
@@ -460,11 +482,11 @@ public class Camera2Launcher extends CameraLauncher {
         for (Size size : sizes) {
             // 相机所支持的尺寸
             Log.i(TAG, "support sizes:----width = " + size.getWidth() + " ,height = " + size.getHeight());
-            // 因为相机是默认横屏，所以相机宽对应组件的高（获取相机真实尺寸和容器组件的差值）
+            // 获取相机真实尺寸和容器组件的差值（因为相机是默认横屏，所以相机宽对应组件的高）
             int offset = Math.abs(size.getWidth() - surfaceHeight);
             // 相机所支持尺寸与当前相机容器的比例差
             float rated = Math.abs((float) size.getWidth() / (float) size.getHeight() - (float) surfaceHeight / (float) surfaceWidth);
-            // 当相机支持尺寸与当前容器比例差小于0.03且相机尺寸小于容器尺寸的时候取相机尺寸和容器组件尺寸差值最小的作为最佳分表率
+            // 当相机支持尺寸与当前容器比例差小于0.03且相机尺寸小于容器尺寸的时候取相机尺寸和容器组件尺寸差值最小的作为最佳分辨率
             if (offset < minOffset && rated < 0.03 && rated < minRated) {
                 bestWidth = size.getWidth();
                 bestHeight = size.getHeight();

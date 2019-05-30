@@ -23,7 +23,7 @@ import usage.ywb.personal.mycamera.interfaces.OnCaptureListener;
  * @author yuwenbo
  * @version [ V.1.0.0  2018/8/7 ]
  */
-public class CameraHelper implements OnCaptureListener {
+public class CaptureHelper implements OnCaptureListener {
 
     private CameraLauncher cameraLauncher;
 
@@ -39,7 +39,7 @@ public class CameraHelper implements OnCaptureListener {
 
     private static final int VERSION_BOUNDARY = Build.VERSION_CODES.LOLLIPOP;
 
-    public CameraHelper(Activity activity, TextureView textureView) {
+    public CaptureHelper(Activity activity, TextureView textureView) {
         if (Build.VERSION.SDK_INT < VERSION_BOUNDARY) {
             cameraLauncher = new Camera1Launcher(activity, textureView);
         } else {
@@ -48,9 +48,20 @@ public class CameraHelper implements OnCaptureListener {
         cameraLauncher.setOnCaptureListener(this);
     }
 
-    public usage.ywb.personal.mycamera.interfaces.CameraLauncher getCameraLauncher() {
+    public CameraLauncher getCameraLauncher() {
         return cameraLauncher;
     }
+
+    public boolean setFlash(boolean isTorch) {
+        if (cameraLauncher instanceof Camera2Launcher) {
+            return ((Camera2Launcher) cameraLauncher).setTorchStatus(isTorch);
+        } else if (cameraLauncher instanceof Camera1Launcher) {
+            ((Camera1Launcher) cameraLauncher).setTorchStatus(isTorch);
+            return true;
+        }
+        return false;
+    }
+
 
     public void setOnCaptureCropListener(OnCaptureCropListener onCaptureCropListener) {
         this.onCaptureCropListener = onCaptureCropListener;
@@ -58,7 +69,7 @@ public class CameraHelper implements OnCaptureListener {
 
     @Override
     public void onCaptureResult(byte[] result, int width, int height) {
-        Log.i("CameraHelper", "currentThread：" + Thread.currentThread().getName());
+        Log.i("CaptureHelper", "currentThread：" + Thread.currentThread().getName());
         if (onCaptureCropListener != null) {
             Bitmap bitmap;
             if (Build.VERSION.SDK_INT < VERSION_BOUNDARY) {

@@ -34,10 +34,12 @@ public final class ViewfinderView extends View {
     /**
      * 裁剪框宽与预览框宽的比
      */
+    @Deprecated
     private float cropWidthRate = 1f;
     /**
      * 裁剪框高与预览框高的比
      */
+    @Deprecated
     private float cropHeightRate = 1f;
 
     private OnDrawCompletedListener onDrawCompletedListener;
@@ -55,19 +57,12 @@ public final class ViewfinderView extends View {
         initPaint();
     }
 
-    public Rect getCropRect() {
-        Rect rect = new Rect();
-        rect.left = (int) cropRect.left;
-        rect.top = (int) cropRect.top;
-        rect.right = (int) cropRect.right;
-        rect.bottom = (int) cropRect.bottom;
-        return rect;
-    }
-
+    @Deprecated
     public float getCropWidthRate() {
         return cropWidthRate;
     }
 
+    @Deprecated
     public float getCropHeightRate() {
         return cropHeightRate;
     }
@@ -85,7 +80,7 @@ public final class ViewfinderView extends View {
             cropRect.set((w - width) / 2, (h - height) / 2, (w + width) / 2, (h + height) / 2);
         }
         if (onDrawCompletedListener != null) {
-            onDrawCompletedListener.onCompleted();
+            onDrawCompletedListener.onCompleted(w, h, new Rect(cropRect));
         }
         postInvalidate();
     }
@@ -121,7 +116,12 @@ public final class ViewfinderView extends View {
     }
 
     public interface OnDrawCompletedListener {
-        void onCompleted();
+        /**
+         * @param frameWidth
+         * @param frameHeight
+         * @param cropRect
+         */
+        void onCompleted(int frameWidth, int frameHeight, Rect cropRect);
     }
 
 }
