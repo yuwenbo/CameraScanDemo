@@ -25,9 +25,9 @@ import usage.ywb.personal.mycamera.interfaces.OnCaptureListener;
  */
 public class CaptureHelper implements OnCaptureListener {
 
-    private CameraLauncher cameraLauncher;
+    private CameraLauncher mCameraLauncher;
 
-    private Rect cropRect;
+    private Rect mCropRect;
     /**
      * 由于图片的真实尺寸与手机的屏幕预览尺寸并不一定是相同的，
      * 需要得到一个比例，用以计算真实的裁剪框大小和位置
@@ -41,22 +41,22 @@ public class CaptureHelper implements OnCaptureListener {
 
     public CaptureHelper(Activity activity, TextureView textureView) {
         if (Build.VERSION.SDK_INT < VERSION_BOUNDARY) {
-            cameraLauncher = new Camera1Launcher(activity, textureView);
+            mCameraLauncher = new Camera1Launcher(activity, textureView);
         } else {
-            cameraLauncher = new Camera2Launcher(activity, textureView);
+            mCameraLauncher = new Camera2Launcher(activity, textureView);
         }
-        cameraLauncher.setOnCaptureListener(this);
+        mCameraLauncher.setOnCaptureListener(this);
     }
 
     public CameraLauncher getCameraLauncher() {
-        return cameraLauncher;
+        return mCameraLauncher;
     }
 
     public boolean setFlash(boolean isTorch) {
-        if (cameraLauncher instanceof Camera2Launcher) {
-            return ((Camera2Launcher) cameraLauncher).setTorchStatus(isTorch);
-        } else if (cameraLauncher instanceof Camera1Launcher) {
-            ((Camera1Launcher) cameraLauncher).setTorchStatus(isTorch);
+        if (mCameraLauncher instanceof Camera2Launcher) {
+            return ((Camera2Launcher) mCameraLauncher).setTorchStatus(isTorch);
+        } else if (mCameraLauncher instanceof Camera1Launcher) {
+            ((Camera1Launcher) mCameraLauncher).setTorchStatus(isTorch);
             return true;
         }
         return false;
@@ -87,7 +87,7 @@ public class CaptureHelper implements OnCaptureListener {
      * @param cropHeightRate 裁剪框高与预览框高的比
      */
     public void setCropRect(Rect cropRect, float cropWidthRate, float cropHeightRate) {
-        this.cropRect = cropRect;
+        this.mCropRect = cropRect;
         this.cropWidthRate = cropWidthRate;
         this.cropHeightRate = cropHeightRate;
     }
@@ -105,14 +105,14 @@ public class CaptureHelper implements OnCaptureListener {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         YuvImage yuvImage = new YuvImage(bytes, ImageFormat.NV21, width, height, null);
         Rect originalRect = new Rect(0, 0, width, height);
-        if (cropRect == null || cropRect.isEmpty() || cropWidthRate == 0 || cropHeightRate == 0) {
+        if (mCropRect == null || mCropRect.isEmpty() || cropWidthRate == 0 || cropHeightRate == 0) {
             yuvImage.compressToJpeg(originalRect, 100, outputStream);
         } else {
             //View呈现的宽对应图片的高，View的高对应图片的宽
             int cropWidth = (int) (cropWidthRate * height);
             int cropHeight = (int) (cropHeightRate * width);
-            int x = cropRect.top * cropWidth / cropRect.width();
-            int y = cropRect.left * cropHeight / cropRect.height();
+            int x = mCropRect.top * cropWidth / mCropRect.width();
+            int y = mCropRect.left * cropHeight / mCropRect.height();
             Rect rect = new Rect(x, y, x + cropHeight, y + cropWidth);
             if (originalRect.contains(rect)) {
                 yuvImage.compressToJpeg(rect, 100, outputStream);
@@ -147,7 +147,7 @@ public class CaptureHelper implements OnCaptureListener {
     private Bitmap parse2Bitmap(byte[] bytes, int width, int height) {
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         Rect originalRect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-        if (cropRect == null || cropRect.isEmpty() || cropWidthRate == 0 || cropHeightRate == 0) {
+        if (mCropRect == null || mCropRect.isEmpty() || cropWidthRate == 0 || cropHeightRate == 0) {
             return bitmap;
         } else {
             Rect realCropRect = new Rect();
@@ -156,14 +156,14 @@ public class CaptureHelper implements OnCaptureListener {
             if (height / width != originalRect.height() / originalRect.width()) {
                 int cropWidth = (int) (cropWidthRate * originalRect.width());
                 int cropHeight = (int) (cropHeightRate * originalRect.height());
-                int x = cropRect.left * cropWidth / cropRect.width();
-                int y = cropRect.top * cropHeight / cropRect.height();
+                int x = mCropRect.left * cropWidth / mCropRect.width();
+                int y = mCropRect.top * cropHeight / mCropRect.height();
                 realCropRect.set(x, y, x + cropWidth, y + cropHeight);
             } else {
                 int cropWidth = (int) (cropWidthRate * originalRect.height());
                 int cropHeight = (int) (cropHeightRate * originalRect.width());
-                int x = cropRect.top * cropWidth / cropRect.width();
-                int y = cropRect.left * cropHeight / cropRect.height();
+                int x = mCropRect.top * cropWidth / mCropRect.width();
+                int y = mCropRect.left * cropHeight / mCropRect.height();
                 realCropRect.set(x, y, x + cropHeight, y + cropWidth);
             }
             if (originalRect.contains(realCropRect)) {

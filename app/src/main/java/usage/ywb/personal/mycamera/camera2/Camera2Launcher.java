@@ -51,21 +51,21 @@ public class Camera2Launcher extends CameraLauncher {
 
     private static final String TAG = Camera2Launcher.class.getSimpleName();
 
-    private Activity activity;
+    private Activity mActivity;
 
-    private CameraManager cameraManager;
-    private HandlerThread cameraThread;
-    private Handler cameraHandler;
+    private CameraManager mCameraManager;
+    private HandlerThread mCameraThread;
+    private Handler mCameraHandler;
 
-    private TextureView textureView;
-    private ImageReader imageReader;
-    private Surface surface;
-    private SurfaceTexture surfaceTexture;
+    private TextureView mTextureView;
+    private ImageReader mImageReader;
+    private Surface mSurface;
+    private SurfaceTexture mSurfaceTexture;
 
-    private CameraDevice cameraDevice;
-    private CameraCaptureSession captureSession;
-    private CameraCharacteristics characteristics;
-    private CaptureRequest.Builder captureRequestBuilder;
+    private CameraDevice mCameraDevice;
+    private CameraCaptureSession mCaptureSession;
+    private CameraCharacteristics mCharacteristics;
+    private CaptureRequest.Builder mCaptureRequestBuilder;
 
     private static final String CAMERA_THREAD = "CameraBackground";
 
@@ -76,7 +76,7 @@ public class Camera2Launcher extends CameraLauncher {
     /**
      * 后置摄像头ID
      */
-    private String cameraId;
+    private String mCameraId;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -88,9 +88,9 @@ public class Camera2Launcher extends CameraLauncher {
     }
 
     public Camera2Launcher(Activity activity, TextureView textureView) {
-        this.activity = activity;
-        this.textureView = textureView;
-        cameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
+        this.mActivity = activity;
+        this.mTextureView = textureView;
+        mCameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         textureView.setSurfaceTextureListener(surfaceTextureListener);
     }
 
@@ -119,22 +119,22 @@ public class Camera2Launcher extends CameraLauncher {
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
             Log.i(TAG, "surfaceTextureListener：" + "    onSurfaceTextureAvailable");
             startCameraThread();
-            Camera2Launcher.this.surfaceTexture = surface;
-            Camera2Launcher.this.surface = new Surface(surface);
+            Camera2Launcher.this.mSurfaceTexture = surface;
+            Camera2Launcher.this.mSurface = new Surface(surface);
             initCamera();
         }
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
             Log.i(TAG, "surfaceTextureListener：" + "    onSurfaceTextureSizeChanged");
-            surface.setDefaultBufferSize(textureView.getWidth(), textureView.getHeight());
+            surface.setDefaultBufferSize(mTextureView.getWidth(), mTextureView.getHeight());
         }
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
             Log.i(TAG, "surfaceTextureListener：" + "    onSurfaceTextureDestroyed");
             surface.release();
-            surfaceTexture = null;
+            mSurfaceTexture = null;
             return false;
         }
 
@@ -152,10 +152,10 @@ public class Camera2Launcher extends CameraLauncher {
         public void onOpened(@NonNull CameraDevice camera) {
             Log.i(TAG, "cameraStateCallback：" + "   onOpened：");
             try {
-                if (textureView != null && textureView.isAvailable()) {
-                    Camera2Launcher.this.cameraDevice = camera;
+                if (mTextureView != null && mTextureView.isAvailable()) {
+                    Camera2Launcher.this.mCameraDevice = camera;
                     Log.i(TAG, "相机已打开，创建获取会话！");
-                    camera.createCaptureSession(Arrays.asList(surface, imageReader.getSurface()), captureStateCallback, cameraHandler);
+                    camera.createCaptureSession(Arrays.asList(mSurface, mImageReader.getSurface()), captureStateCallback, mCameraHandler);
                 }
             } catch (CameraAccessException e) {
                 e.printStackTrace();
@@ -166,7 +166,7 @@ public class Camera2Launcher extends CameraLauncher {
         public void onDisconnected(@NonNull CameraDevice camera) {
             Log.i(TAG, "cameraStateCallback：" + "   onDisconnected：");
             camera.close();
-            cameraDevice = null;
+            mCameraDevice = null;
         }
 
         @Override
@@ -175,7 +175,7 @@ public class Camera2Launcher extends CameraLauncher {
             //当camera出错时会回调该方法
             //应在该方法调用CameraDevice.close()和做一些其他释放相机资源的操作,防止相机出错而导致一系列问题。
             camera.close();
-            cameraDevice = null;
+            mCameraDevice = null;
         }
 
     };
@@ -187,14 +187,14 @@ public class Camera2Launcher extends CameraLauncher {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession session) {
             Log.i(TAG, "captureStateCallback：" + "  onConfigured");
-            captureSession = session;
+            mCaptureSession = session;
             preview();
         }
 
         @Override
         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
             Log.i(TAG, "captureStateCallback：" + "  onConfigureFailed");
-            captureSession = null;
+            mCaptureSession = null;
         }
     };
 
@@ -240,12 +240,12 @@ public class Camera2Launcher extends CameraLauncher {
      * 开启相机线程
      */
     private void startCameraThread() {
-        if (cameraThread == null) {
-            cameraThread = new HandlerThread(CAMERA_THREAD);
-            cameraThread.start();
+        if (mCameraThread == null) {
+            mCameraThread = new HandlerThread(CAMERA_THREAD);
+            mCameraThread.start();
         }
-        if (cameraHandler == null) {
-            cameraHandler = new Handler(cameraThread.getLooper());
+        if (mCameraHandler == null) {
+            mCameraHandler = new Handler(mCameraThread.getLooper());
         }
     }
 
@@ -253,9 +253,9 @@ public class Camera2Launcher extends CameraLauncher {
      * 关闭相机线程
      */
     private void quitCameraThread() {
-        if (cameraThread != null && cameraThread.quitSafely()) {
-            cameraHandler = null;
-            cameraThread = null;
+        if (mCameraThread != null && mCameraThread.quitSafely()) {
+            mCameraHandler = null;
+            mCameraThread = null;
         }
     }
 
@@ -263,12 +263,12 @@ public class Camera2Launcher extends CameraLauncher {
      * 初始化相机
      */
     private void initCamera() {
-        if (TextUtils.isEmpty(cameraId)) {
-            cameraId = getBackCameraId();
+        if (TextUtils.isEmpty(mCameraId)) {
+            mCameraId = getBackCameraId();
         }
-        if (characteristics != null && mPreviewSize == null) {
+        if (mCharacteristics != null && mPreviewSize == null) {
             //相机可用的配置流
-            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            StreamConfigurationMap map = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             if (map != null) {
                 /**
                  * {@link StreamConfigurationMap#getOutputSizes(Class)} 要求传递一个 Class 类型，
@@ -281,17 +281,17 @@ public class Camera2Launcher extends CameraLauncher {
                  * SurfaceHolder：常用来显示预览画面。
                  * SurfaceTexture：常用来显示预览画面。
                  */
-                mPreviewSize = getBestResolution(map.getOutputSizes(SurfaceTexture.class), textureView.getWidth(), textureView.getHeight());
+                mPreviewSize = getBestResolution(map.getOutputSizes(SurfaceTexture.class), mTextureView.getWidth(), mTextureView.getHeight());
             }
         }
         if (mPreviewSize != null) {
             //设置预览画面的尺寸
-            surfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-            imageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.JPEG, 1);
+            mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.JPEG, 1);
         } else {
-            imageReader = ImageReader.newInstance(textureView.getWidth(), textureView.getHeight(), ImageFormat.JPEG, 1);
+            mImageReader = ImageReader.newInstance(mTextureView.getWidth(), mTextureView.getHeight(), ImageFormat.JPEG, 1);
         }
-        imageReader.setOnImageAvailableListener(imageAvailableListener, cameraHandler);
+        mImageReader.setOnImageAvailableListener(imageAvailableListener, mCameraHandler);
         openCamera();
     }
 
@@ -299,16 +299,16 @@ public class Camera2Launcher extends CameraLauncher {
      * 闪光灯开关
      */
     public boolean setTorchStatus(boolean needTorch) {
-        if (characteristics != null) {
-            Boolean torch = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
-            if (torch != null && torch && captureSession != null && captureRequestBuilder != null) {//闪光灯是否可用
+        if (mCharacteristics != null) {
+            Boolean torch = mCharacteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+            if (torch != null && torch && mCaptureSession != null && mCaptureRequestBuilder != null) {//闪光灯是否可用
                 if (needTorch) {
-                    captureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);//开启闪光灯
+                    mCaptureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);//开启闪光灯
                 } else {
-                    captureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);//关闭闪光灯
+                    mCaptureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);//关闭闪光灯
                 }
                 try {
-                    captureSession.setRepeatingRequest(captureRequestBuilder.build(), null, cameraHandler);
+                    mCaptureSession.setRepeatingRequest(mCaptureRequestBuilder.build(), null, mCameraHandler);
                     return true;
                 } catch (CameraAccessException e) {
                     e.printStackTrace();
@@ -325,13 +325,13 @@ public class Camera2Launcher extends CameraLauncher {
      */
     private String getBackCameraId() {
         try {
-            String[] cameraIdList = cameraManager.getCameraIdList();
+            String[] cameraIdList = mCameraManager.getCameraIdList();
             if (cameraIdList.length > 0) {
-                cameraManager.registerAvailabilityCallback(availabilityCallback, cameraHandler);
+                mCameraManager.registerAvailabilityCallback(availabilityCallback, mCameraHandler);
                 for (String cameraId : cameraIdList) {
-                    characteristics = cameraManager.getCameraCharacteristics(cameraId);
+                    mCharacteristics = mCameraManager.getCameraCharacteristics(cameraId);
                     //获取摄像头的方向
-                    Integer lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    Integer lensFacing = mCharacteristics.get(CameraCharacteristics.LENS_FACING);
                     if (lensFacing != null && lensFacing == CameraCharacteristics.LENS_FACING_BACK) {
                         // 如果是后置摄像头
                         return cameraId;
@@ -348,17 +348,17 @@ public class Camera2Launcher extends CameraLauncher {
      * 打开相机
      */
     private void openCamera() {
-        if (TextUtils.isEmpty(cameraId)) {
-            Toast.makeText(activity, "没有可用相机设备！", Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(mCameraId)) {
+            Toast.makeText(mActivity, "没有可用相机设备！", Toast.LENGTH_SHORT).show();
             return;
         }
         try {
-            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(activity, "应用没有使用相机的权限，请去设置中配置权限！", Toast.LENGTH_LONG).show();
+            if (ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(mActivity, "应用没有使用相机的权限，请去设置中配置权限！", Toast.LENGTH_LONG).show();
                 return;
             }
             Log.i(TAG, "打开相机");
-            cameraManager.openCamera(cameraId, cameraStateCallback, cameraHandler);
+            mCameraManager.openCamera(mCameraId, cameraStateCallback, mCameraHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -369,21 +369,21 @@ public class Camera2Launcher extends CameraLauncher {
      */
     @Override
     public void preview() {
-        if (cameraDevice != null && captureSession != null) {
+        if (mCameraDevice != null && mCaptureSession != null) {
             try {
                 //创建一个适用于配置预览的模板
-                captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                captureRequestBuilder.addTarget(surface);
+                mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                mCaptureRequestBuilder.addTarget(mSurface);
                 //CaptureRequest.Builder#set()方法设置预览界面的特征,例如，闪光灯，zoom调焦等
-                captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);//自动对焦
+                mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);//自动对焦
                 // 设置自动曝光模式
-                captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
                 // 获取设备方向
-                int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+                int rotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
                 // 根据设备方向计算设置照片的方向
-                captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-                captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-                captureSession.setRepeatingRequest(captureRequestBuilder.build(), null, cameraHandler);
+                mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+                mCaptureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                mCaptureSession.setRepeatingRequest(mCaptureRequestBuilder.build(), null, mCameraHandler);
             } catch (CameraAccessException e) {
                 e.printStackTrace();
             }
@@ -395,16 +395,16 @@ public class Camera2Launcher extends CameraLauncher {
      */
     @Override
     public void capture() {
-        if (cameraDevice != null && captureSession != null) {
+        if (mCameraDevice != null && mCaptureSession != null) {
             try {
-//                captureSession.stopRepeating();
-                captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-                captureRequestBuilder.addTarget(surface);
-                captureRequestBuilder.addTarget(imageReader.getSurface());
-                int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+//                mCaptureSession.stopRepeating();
+                mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                mCaptureRequestBuilder.addTarget(mSurface);
+                mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
+                int rotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
                 // 根据设备方向计算设置照片的方向
-                captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-                captureSession.capture(captureRequestBuilder.build(), captureCallback, cameraHandler);
+                mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+                mCaptureSession.capture(mCaptureRequestBuilder.build(), captureCallback, mCameraHandler);
             } catch (CameraAccessException e) {
                 e.printStackTrace();
             }
@@ -416,7 +416,7 @@ public class Camera2Launcher extends CameraLauncher {
      */
     @Override
     public void onResume() {
-        if (surfaceTexture != null && surface != null && surface.isValid()) {
+        if (mSurfaceTexture != null && mSurface != null && mSurface.isValid()) {
             initCamera();
         }
     }
@@ -426,23 +426,23 @@ public class Camera2Launcher extends CameraLauncher {
      */
     @Override
     public void onPause() {
-        if (captureSession != null) {
+        if (mCaptureSession != null) {
             try {
-                captureSession.stopRepeating();
-                captureSession.abortCaptures();
-                captureSession.close();
+                mCaptureSession.stopRepeating();
+                mCaptureSession.abortCaptures();
+                mCaptureSession.close();
             } catch (CameraAccessException e) {
                 e.printStackTrace();
             }
-            captureSession = null;
+            mCaptureSession = null;
         }
-        if (imageReader != null) {
-            imageReader.close();
-            imageReader = null;
+        if (mImageReader != null) {
+            mImageReader.close();
+            mImageReader = null;
         }
-        if (cameraDevice != null) {
-            cameraDevice.close();
-            cameraDevice = null;
+        if (mCameraDevice != null) {
+            mCameraDevice.close();
+            mCameraDevice = null;
         }
     }
 
@@ -451,18 +451,18 @@ public class Camera2Launcher extends CameraLauncher {
      */
     @Override
     public void release() {
-        if (cameraManager != null) {
+        if (mCameraManager != null) {
             //该回调会一直占用资源而不能被释放,且会继续而且是独立于activity生命周期和单独的CameraManager实例地无终止地接收相机事件!
-            cameraManager.unregisterAvailabilityCallback(availabilityCallback);
+            mCameraManager.unregisterAvailabilityCallback(availabilityCallback);
         }
         this.onPause();
-        if (surfaceTexture != null) {
-            surfaceTexture.release();
-            surfaceTexture = null;
+        if (mSurfaceTexture != null) {
+            mSurfaceTexture.release();
+            mSurfaceTexture = null;
         }
-        if (surface != null && surface.isValid()) {
-            surface.release();
-            surface = null;
+        if (mSurface != null && mSurface.isValid()) {
+            mSurface.release();
+            mSurface = null;
         }
         quitCameraThread();
     }
@@ -478,7 +478,7 @@ public class Camera2Launcher extends CameraLauncher {
         Size bestSize;
         int minOffset = Integer.MAX_VALUE;
         float minRated = Float.MAX_VALUE;
-        Log.i(TAG, "surface size----width = " + surfaceWidth + " ,height = " + surfaceHeight);
+        Log.i(TAG, "mSurface size----width = " + surfaceWidth + " ,height = " + surfaceHeight);
         for (Size size : sizes) {
             // 相机所支持的尺寸
             Log.i(TAG, "support sizes:----width = " + size.getWidth() + " ,height = " + size.getHeight());

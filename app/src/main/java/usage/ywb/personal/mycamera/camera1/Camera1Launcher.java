@@ -3,8 +3,6 @@ package usage.ywb.personal.mycamera.camera1;
 import android.app.Activity;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCharacteristics;
 import android.util.Log;
 import android.view.TextureView;
 
@@ -21,36 +19,36 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
 
     private static final String TAG = Camera1Launcher.class.getSimpleName();
 
-    private TextureView textureView;
-    private SurfaceTexture surfaceTexture;
+    private TextureView mTextureView;
+    private SurfaceTexture mSurfaceTexture;
 
-    private Camera camera;
-    private Camera.Parameters parameters;
-    private CameraAutoFocus cameraAutoFocus;
-    private PreviewCallback previewCallback;
-    private Camera.Size previewSize;
-    private Camera.Size pictureSize;
+    private Camera mCamera;
+    private Camera.Parameters mParameters;
+    private CameraAutoFocus mCameraAutoFocus;
+    private PreviewCallback mPreviewCallback;
+    private Camera.Size mPreviewSize;
+    private Camera.Size mPictureSize;
 
-    private SensorController sensorController;
+    private SensorController mSensorController;
 
     private boolean isFocusing = false;
 
     private static final String CAMERA_THREAD = "CameraBackground";
 
     public Camera1Launcher(Activity activity, TextureView textureView) {
-        this.textureView = textureView;
-        textureView.setSurfaceTextureListener(surfaceTextureListener);
-        sensorController = new SensorController(activity);
-        sensorController.setOnFocusableListener(this);
+        this.mTextureView = textureView;
+        mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+        mSensorController = new SensorController(activity);
+        mSensorController.setOnFocusableListener(this);
     }
 
     /**
      * 相机预览视图创建
      */
-    private TextureView.SurfaceTextureListener surfaceTextureListener = new TextureView.SurfaceTextureListener() {
+    private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, final int width, final int height) {
-            surfaceTexture = surface;
+            mSurfaceTexture = surface;
             openCamera();
         }
 
@@ -61,7 +59,7 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-            Log.i(TAG, "surfaceTextureListener：" + "    onSurfaceTextureDestroyed");
+            Log.i(TAG, "mSurfaceTextureListener：" + "    onSurfaceTextureDestroyed");
             return false;
         }
 
@@ -75,24 +73,24 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
      */
     private void openCamera() {
         try {
-            camera = Camera.open();
-            cameraAutoFocus = new CameraAutoFocus();
-            previewCallback = new PreviewCallback();
-            parameters = camera.getParameters();
-            if (previewSize == null) {
-                previewSize = getBestPreviewResolution(textureView.getWidth(), textureView.getHeight());
-                Log.i(TAG, "best preview sizes:----width = " + previewSize.width + " ,height = " + previewSize.height);
+            mCamera = Camera.open();
+            mCameraAutoFocus = new CameraAutoFocus();
+            mPreviewCallback = new PreviewCallback();
+            mParameters = mCamera.getParameters();
+            if (mPreviewSize == null) {
+                mPreviewSize = getBestPreviewResolution(mTextureView.getWidth(), mTextureView.getHeight());
+                Log.i(TAG, "best preview sizes:----width = " + mPreviewSize.width + " ,height = " + mPreviewSize.height);
             }
-            parameters.setPreviewSize(previewSize.width, previewSize.height);// 获得摄像预览的大小
-            if (pictureSize == null) {
-                pictureSize = getBestPictureResolution(previewSize);
-                Log.i(TAG, "best picture sizes:----width = " + pictureSize.width + " ,height = " + pictureSize.height);
+            mParameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);// 获得摄像预览的大小
+            if (mPictureSize == null) {
+                mPictureSize = getBestPictureResolution(mPreviewSize);
+                Log.i(TAG, "best picture sizes:----width = " + mPictureSize.width + " ,height = " + mPictureSize.height);
             }
-            parameters.setPictureSize(pictureSize.width, pictureSize.height);// 设置拍出来的屏幕大小
-            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);// 自动对焦模式
-            camera.setDisplayOrientation(90);
-            camera.setParameters(parameters);
-            camera.setPreviewTexture(surfaceTexture);
+            mParameters.setPictureSize(mPictureSize.width, mPictureSize.height);// 设置拍出来的屏幕大小
+            mParameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);// 自动对焦模式
+            mCamera.setDisplayOrientation(90);
+            mCamera.setParameters(mParameters);
+            mCamera.setPreviewTexture(mSurfaceTexture);
             Log.i(TAG, "相机准备就绪，开启预览...");
             preview();
         } catch (IOException e) {
@@ -103,35 +101,35 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
 
     @Override
     public void onResume() {
-        if (surfaceTexture != null && textureView != null && textureView.isAvailable()) {
+        if (mSurfaceTexture != null && mTextureView != null && mTextureView.isAvailable()) {
             openCamera();
         }
-        sensorController.onStart();
+        mSensorController.onStart();
     }
 
     /**
      * 闪光灯
      */
     public void setTorchStatus(boolean needTorch) {
-        if (parameters != null) {
+        if (mParameters != null) {
             if (needTorch) {
-                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);// 开启闪光灯
+                mParameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);// 开启闪光灯
             } else {
-                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);// 开启闪光灯
+                mParameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);// 开启闪光灯
             }
-            camera.setParameters(parameters);
+            mCamera.setParameters(mParameters);
         }
     }
 
     @Override
     public void onPause() {
-        sensorController.onStop();
-        if (camera != null) {
-            camera.cancelAutoFocus();
-            camera.stopPreview();
-            camera.unlock();
-            camera.release();
-            camera = null;
+        mSensorController.onStop();
+        if (mCamera != null) {
+            mCamera.cancelAutoFocus();
+            mCamera.stopPreview();
+            mCamera.unlock();
+            mCamera.release();
+            mCamera = null;
         }
     }
 
@@ -142,31 +140,31 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
     public void release() {
         Log.i(TAG, "----release----");
         this.onPause();
-        if (surfaceTexture != null) {
-            surfaceTexture.release();
-            surfaceTexture = null;
+        if (mSurfaceTexture != null) {
+            mSurfaceTexture.release();
+            mSurfaceTexture = null;
         }
     }
 
     @Override
     public void preview() {
-        if (camera != null && cameraAutoFocus != null) {
-            camera.stopPreview();
-            camera.startPreview();
+        if (mCamera != null && mCameraAutoFocus != null) {
+            mCamera.stopPreview();
+            mCamera.startPreview();
             requestFocus();
         }
     }
 
     @Override
     public void capture() {
-        if (camera != null && previewCallback != null) {
-            camera.setOneShotPreviewCallback(previewCallback);
+        if (mCamera != null && mPreviewCallback != null) {
+            mCamera.setOneShotPreviewCallback(mPreviewCallback);
         }
     }
 
     @Override
     public void onFocusable() {
-        if (camera != null && cameraAutoFocus != null && !isFocusing) {
+        if (mCamera != null && mCameraAutoFocus != null && !isFocusing) {
             requestFocus();
         }
     }
@@ -175,12 +173,12 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
      * 请求对焦
      */
     private void requestFocus() {
-        if (surfaceTexture == null) {
+        if (mSurfaceTexture == null) {
             return;
         }
         isFocusing = true;
-        camera.cancelAutoFocus();
-        camera.autoFocus(cameraAutoFocus);
+        mCamera.cancelAutoFocus();
+        mCamera.autoFocus(mCameraAutoFocus);
     }
 
     /**
@@ -207,7 +205,7 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
         public void onPreviewFrame(byte[] data, Camera camera) {
             Log.i(TAG, "获取相机成功对焦后生成的预览图...");
             if (onCaptureListener != null) {
-                onCaptureListener.onCaptureResult(data, pictureSize.width, pictureSize.height);
+                onCaptureListener.onCaptureResult(data, mPictureSize.width, mPictureSize.height);
             }
         }
     }
@@ -220,7 +218,7 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
      * @return 预览分辨率
      */
     private Camera.Size getBestPreviewResolution(int surfaceWidth, int surfaceHeight) {
-        List<Camera.Size> previewSizes = parameters.getSupportedPreviewSizes();
+        List<Camera.Size> previewSizes = mParameters.getSupportedPreviewSizes();
         int minOffset = Integer.MIN_VALUE;
         float minRated = Float.MAX_VALUE;
         Camera.Size bestSize = null;
@@ -252,7 +250,7 @@ public class Camera1Launcher extends CameraLauncher implements SensorController.
      * @return 图片尺寸
      */
     private Camera.Size getBestPictureResolution(Camera.Size previewSize) {
-        List<Camera.Size> pictureSizes = parameters.getSupportedPictureSizes();
+        List<Camera.Size> pictureSizes = mParameters.getSupportedPictureSizes();
         Camera.Size bestSize = null;
         float rated = (float) previewSize.width / (float) previewSize.height;
         int minOffset = Integer.MAX_VALUE;
